@@ -1,0 +1,406 @@
+openapi: 3.0.0
+info:
+  title: Arkana Backend API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/
+tags:
+  - name: Auth
+  - name: Users
+  - name: Cases
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email address of the new user.
+                password:
+                  type: string
+                  format: password
+                  description: The password of the new user.
+              required:
+                - email
+                - password
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    format: email
+                    description: The email address of the newly registered user.
+                required:
+                  - email
+                additionalProperties: false
+        '400':
+          description: Bad Request
+  /login:
+    post:
+      summary: Login and get authentication token
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username of the user.
+                password:
+                  type: string
+                  format: password
+                  description: The password of the user.
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The authentication token.
+        '401':
+          description: Unauthorized
+  /logout:
+    post:
+      summary: Logout and invalidate authentication token
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The authentication token to invalidate.
+              required:
+                - token
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+  /forgot_password:
+    post:
+      summary: Reset a forgotten password
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: The email address associated with the user account.
+              required:
+                - email
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+  /cases/{id}:
+    get:
+      summary: Get a specific case by ID
+      tags:
+        - Cases
+      parameters:
+        - name: id
+          in: path
+          description: The ID of the case to retrieve
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+  /cases:
+    get:
+      summary: Get all cases with a limit of 100 and sorted by different criteria
+      tags:
+        - Cases
+      parameters:
+        - name: referring_doctor
+          in: query
+          description: The referring doctor for the cases
+          required: true
+          schema:
+            type: string
+        - name: group_id
+          in: query
+          description: The ID of the group to retrieve cases for
+          required: false
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          description: The start date for the cases (YYYY-MM-DD format)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: The end date for the cases (YYYY-MM-DD format)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: first_name
+          in: query
+          description: The first name of the patient
+          required: false
+          schema:
+            type: string
+        - name: last_name
+          in: query
+          description: The last name of the patient
+          required: false
+          schema:
+            type: string
+        - name: physician_ids
+          in: query
+          description: A comma-separated list of physician IDs
+          required: false
+          schema:
+            type: string
+        - name: diagnosis
+          in: query
+          description: The diagnosis of the case
+          required: false
+          schema:
+            type: string
+        - name: symptoms
+          in: query
+          description: The symptoms of the case
+          required: false
+          schema:
+            type: string
+        - name: gender
+          in: query
+          description: The gender of the patient
+          required: false
+          schema:
+            type: string
+            enum: [male, female, other]
+        - name: min_age
+          in: query
+          description: The minimum age of the patient
+          required: false
+          schema:
+            type: integer
+        - name: max_age
+          in: query
+          description: The maximum age of the patient
+          required: false
+          schema:
+            type: integer
+        - name: sort_by
+          in: query
+          description: The field to sort the cases by
+          required: false
+          schema:
+            type: string
+            enum:
+              - date
+              - alpha
+              - reverse_alpha
+        - name: limit
+          in: query
+          description: The maximum number of cases to return (default is 100)
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            default: 100
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Case'
+        '400':
+          description: Bad Request
+  /users/{id}/contact:
+    get:
+      summary: Get user contact information by ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          description: The ID of the user to retrieve contact information for.
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+  /contact-info:
+    post:
+      summary: Create user contact information
+      tags:
+        - Users
+      requestBody:
+        description: The user contact information to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: The URI of the newly created user contact information.
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The ID of the user.
+        name:
+          type: string
+          description: The name of the user.
+        email:
+          type: string
+          format: email
+          description: The email address of the user.
+        phone_number:
+          type: string
+          description: The phone number of the user.
+        office_number:
+          type: string
+          description: The office number of the user.
+      required:
+        - id
+        - name
+        - email
+        - phone_number
+        - office_number
+    Case:
+      type: object
+      properties:
+        date_of_birth:
+          type: string
+          format: date
+          description: The date of birth of the patient.
+        age:
+          type: integer
+          description: The age of the patient in years.
+        gender:
+          type: string
+          description: The gender of the patient.
+        recent_amendments:
+          type: string
+          description: The recent amendments made to the case.
+        diagnosis:
+          type: string
+          description: The diagnosis of the case.
+        comment:
+          type: string
+          description: Any additional comments about the case.
+        chronicity_summary:
+          type: string
+          description: The summary of chronicity.
+        reference:
+          type: string
+          description: The reference of the case.
+        clinical_history:
+          type: string
+          description: The clinical history of the patient.
+        gross_description:
+          type: string
+          description: The gross description of the specimen.
+        microscopic_description:
+          type: string
+          description: The microscopic description of the specimen.
+        physician_call_line:
+          type: string
+          description: The physician call line.
+        physician_signature_line:
+          type: string
+          description: The physician signature line.
+        related_reports:
+          type: array
+          description: Any related reports for the case.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The ID of the related report.
+              title:
+                type: string
+                description: The title of the related report.
+            required:
+              - id
+              - title
